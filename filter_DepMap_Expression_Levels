@@ -1,0 +1,116 @@
+##################
+#### PACKAGES ####
+##################
+
+library(tidyverse)
+library(magrittr)
+library(HGNChelper)
+library(annotables)
+library(data.table)
+
+################
+#### inputs ####
+################
+
+# the root directory containing the script and the proteome and rna measurements file
+base = "C:/Users/Documents/YCharOS/Master_file/"
+
+
+## load the proteome and RNA quantifications raw values (place in the root folder)
+dat = read_tsv(paste0(base,"downloaded_data_depmap2_genedep.tsv"))
+
+
+
+# top X cell lines to find for this protein / gene
+n=3000
+# most interesting cell lines we have
+top_cells = c("HELA","HAP1", "THP1", "U2OS", "HCT116", "A549", "A431", "U87MG", "A375", "CACO2", "CALU3", "HEPG2", "JURKAT", "K562", "LNCAP", "MCF7", "PC3", "RAJI","SHSY5Y", "SKNBE2", "SW480" )
+
+
+
+
+
+
+
+#################
+#### outputs ####
+#################
+
+# output diretory containing the output files
+# one file will be produced for each gene
+out_dir = paste0(base,"output_rna_ma/")
+dir.create(out_dir,showWarnings = F)
+
+#one output file for all genes
+##You HAVE TO reset the table every time you run the script, otherwise it will keep on adding to the old values
+all_genes_2.5 = data.frame()
+all_genes_3.5 = data.frame() 
+all_genes_5.0 = data.frame()
+
+
+
+###########################################################################
+## prepare table to just include the studies with cancer cell lines########
+###########################################################################
+## table also has normal tissues, not considered for this analysis
+# = c("Goncalves","Nusinow")
+
+temp =
+  dat %>%
+  #filter(Study.x %in% studies) %>%
+  dplyr::select(gene_symbol, Stripped_cell_line_name, TPMlogp1, GeneDep, cancer_type_final,Tissue) %>%
+  rename(cell_line=Stripped_cell_line_name)
+
+
+
+########################################################
+##### 2. Find Expression in Preferred Cell lines###########
+#########################################################
+
+## find any cell lines that are in common in the lists
+## rank them and then inner join them
+## only if both studies returned results
+
+# explore the cell lines we have that are interesting
+select_cell_lines <-
+  temp %>%
+  filter(cell_line %in% top_cells) %>%
+  pull(cell_line) %>%
+  unique()
+
+
+  # top N by RNA count >=2.5
+  all_genes_3.5 =
+    temp %>%
+    arrange(desc(RNA_count)) %>%
+    filter(RNA_count >=2.5 )  %>%
+    filter(cell_line %in% top_cells)  
+  #slice(1:top_n)
+  write.table(all_genes_2.5, file="C:/Users/Mona AlQazzaz/Documents/YCharOS/Master_file/output_rna_ma/all_genes_2.5.tsv",row.names=FALSE, sep="\t")
+
+
+
+
+  # top N by RNA count >=3.5
+  all_genes_3.5 =
+    temp %>%
+    arrange(desc(RNA_count)) %>%
+    filter(RNA_count >=3.5 )  %>%
+    filter(cell_line %in% top_cells)  
+  #slice(1:top_n)
+write.table(all_genes_3.5, file="C:/Users/Mona AlQazzaz/Documents/YCharOS/Master_file/output_rna_ma/all_genes_3.5.tsv",row.names=FALSE, sep="\t")
+
+
+
+
+
+  # top N by RNA count >=5
+  all_genes_5.0 =
+    temp %>%
+    arrange(desc(RNA_count)) %>%
+    filter(RNA_count >=5 )  %>%
+    filter(cell_line %in% top_cells)  
+  #slice(1:top_n)
+write.table(all_genes_5.0, file="C:/Users/Mona AlQazzaz/Documents/YCharOS/Master_file/output_rna_ma/all_genes_5.tsv",row.names=FALSE, sep="\t")
+
+
